@@ -106,4 +106,3 @@ Edit `/public/manifest.json` to update:
 ## License
 
 Private - White Coat Capital
-
