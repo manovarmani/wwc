@@ -14,9 +14,12 @@ export default function LandingPage() {
     <main className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Logo />
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex-shrink-0">
+            <Logo size="sm" className="sm:hidden" />
+            <Logo size="md" className="hidden sm:block" />
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition">
               How It Works
             </a>
