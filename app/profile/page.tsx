@@ -69,7 +69,7 @@ export default function ProfilePage() {
             <ChevronLeft className="h-5 w-5" />
             <span className="text-sm font-medium">Back</span>
           </Link>
-          <Logo showText={true} />
+          <Logo />
         </div>
       </header>
 

@@ -20,7 +20,7 @@ export default function InvestorPage() {
             <ChevronLeft className="h-5 w-5" />
             <span className="text-sm font-medium">Back to Home</span>
           </Link>
-          <Logo showText={true} />
+          <Logo />
         </div>
       </header>
 

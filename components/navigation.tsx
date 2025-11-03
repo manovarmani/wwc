@@ -13,7 +13,7 @@ export function Navigation() {
   return (
     <nav className="fixed top-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Logo href="/" showText={true} />
+        <Logo href="/" />
         <div className="flex items-center gap-4">
           <Link
             href="/physician"

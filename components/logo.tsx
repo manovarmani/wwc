@@ -2,42 +2,34 @@ import Image from "next/image"
 import Link from "next/link"
 
 interface LogoProps {
-  showText?: boolean
-  text?: string
   size?: "sm" | "md" | "lg"
   href?: string
   className?: string
 }
 
-const sizeClasses = {
-  sm: "w-6 h-6",
-  md: "w-8 h-8",
-  lg: "w-12 h-12",
+const sizeConfig = {
+  sm: { height: 24, width: 105 },   // 24 * 4.36 ≈ 105
+  md: { height: 32, width: 140 },   // 32 * 4.36 ≈ 140
+  lg: { height: 48, width: 209 },   // 48 * 4.36 ≈ 209
 }
 
 export function Logo({ 
-  showText = true, 
-  text = "White Coat Capital",
   size = "md",
   href,
   className = ""
 }: LogoProps) {
+  const { width, height } = sizeConfig[size]
+
   const logoContent = (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <div className={`${sizeClasses[size]} relative flex-shrink-0`}>
-        <Image
-          src="/logo.png"
-          alt="White Coat Capital Logo"
-          fill
-          className="object-contain"
-          priority
-        />
-      </div>
-      {showText && (
-        <span className={`font-semibold ${size === "sm" ? "text-sm" : size === "lg" ? "text-xl" : "text-lg"}`}>
-          {text}
-        </span>
-      )}
+    <div className={`flex items-center ${className}`}>
+      <Image
+        src="/whitecoatcapital_jul27_color-1.png"
+        alt="White Coat Capital Logo"
+        width={width}
+        height={height}
+        className="object-contain flex-shrink-0"
+        priority
+      />
     </div>
   )
 

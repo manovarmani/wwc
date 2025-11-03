@@ -22,7 +22,7 @@ export default function CommunityPage() {
             <ChevronLeft className="h-5 w-5" />
             <span className="text-sm font-medium">Back to Dashboard</span>
           </Link>
-          <Logo showText={true} text="Community & Resources" />
+          <Logo />
         </div>
       </header>
 
