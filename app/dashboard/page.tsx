@@ -3,9 +3,37 @@
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { TrendingUp, Users, DollarSign, Calendar } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  Tooltip,
+  CartesianGrid,
+  ReferenceArea,
+  ReferenceLine,
+} from "recharts"
 
 export default function Dashboard() {
   const userType = "physician" // In a real app, this would come from auth
+  const isMobile = useIsMobile()
+
+  const monthlyPaymentProjection = Array.from({ length: 28 }, (_, i) => {
+    const m = i + 1
+    return { month: `M${m}`, payment: m < 24 ? 0 : 1800 }
+  })
+
+  const portfolioMiniSeries = [
+    { m: "Jan", v: 200000 },
+    { m: "Feb", v: 204000 },
+    { m: "Mar", v: 210500 },
+    { m: "Apr", v: 216800 },
+    { m: "May", v: 225200 },
+    { m: "Jun", v: 232100 },
+  ]
 
   if (userType === "physician") {
     return (
@@ -26,9 +54,26 @@ export default function Dashboard() {
                     <p className="text-3xl font-bold">$200K</p>
                     <p className="text-xs text-muted-foreground mt-2">Balanced Track</p>
                   </div>
-                  <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                    <DollarSign className="h-6 w-6 text-primary" />
-                  </div>
+                  {isMobile ? (
+                    <div className="w-24 h-14">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={portfolioMiniSeries}>
+                          <defs>
+                            <linearGradient id="fundingFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.4} />
+                              <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.05} />
+                            </linearGradient>
+                          </defs>
+                          <Area type="monotone" dataKey="v" stroke="var(--color-primary)" strokeWidth={2} fill="url(#fundingFill)" />
+                          <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <DollarSign className="h-6 w-6 text-primary" />
+                    </div>
+                  )}
                 </div>
               </Card>
 
@@ -39,9 +84,30 @@ export default function Dashboard() {
                     <p className="text-3xl font-bold">$1,800</p>
                     <p className="text-xs text-muted-foreground mt-2">Starting in 2 years</p>
                   </div>
-                  <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                    <Calendar className="h-6 w-6 text-primary" />
-                  </div>
+                  {isMobile ? (
+                    <div className="w-28 h-16 -mr-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={monthlyPaymentProjection}>
+                          <defs>
+                            <linearGradient id="paymentFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.35} />
+                              <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.06} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                          <XAxis dataKey="month" hide />
+                          <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }} />
+                          <ReferenceArea x1="M24" x2="M28" fill="var(--color-primary)" fillOpacity={0.08} />
+                          <ReferenceLine x="M24" stroke="var(--color-border)" strokeDasharray="4 4" />
+                          <Area type="stepAfter" dataKey="payment" stroke="var(--color-primary)" strokeWidth={2} fill="url(#paymentFill)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <Calendar className="h-6 w-6 text-primary" />
+                    </div>
+                  )}
                 </div>
               </Card>
 
@@ -52,9 +118,26 @@ export default function Dashboard() {
                     <p className="text-3xl font-bold">$245K</p>
                     <p className="text-xs text-muted-foreground mt-2">+22% growth</p>
                   </div>
-                  <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="h-6 w-6 text-primary" />
-                  </div>
+                  {isMobile ? (
+                    <div className="w-24 h-14">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={portfolioMiniSeries}>
+                          <defs>
+                            <linearGradient id="valueFill" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.4} />
+                              <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.05} />
+                            </linearGradient>
+                          </defs>
+                          <Area type="monotone" dataKey="v" stroke="var(--color-primary)" strokeWidth={2} fill="url(#valueFill)" />
+                          <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)" }} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="h-6 w-6 text-primary" />
+                    </div>
+                  )}
                 </div>
               </Card>
 
@@ -65,9 +148,11 @@ export default function Dashboard() {
                     <p className="text-3xl font-bold">Active</p>
                     <p className="text-xs text-muted-foreground mt-2">Member since Oct 2024</p>
                   </div>
-                  <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                    <Users className="h-6 w-6 text-primary" />
-                  </div>
+                  {!isMobile ? (
+                    <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                      <Users className="h-6 w-6 text-primary" />
+                    </div>
+                  ) : null}
                 </div>
               </Card>
             </div>

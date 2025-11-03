@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { PWAInstallPrompt } from "./pwa-install-prompt"
+import { BottomNav } from "@/components/bottom-nav"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -50,7 +51,10 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`font-sans antialiased`}>
-        {children}
+        <div className="min-h-dvh pt-0 md:pt-16 pb-20 md:pb-0">
+          {children}
+        </div>
+        <BottomNav />
         <PWAInstallPrompt />
         <Analytics />
         <script
