@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, TrendingUp, Users, Lock } from "lucide-react"
+import { ArrowRight, TrendingUp, Users, Lock, X, Mail, Phone, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Logo } from "@/components/logo"
@@ -9,6 +9,9 @@ import { useState } from "react"
 
 export default function LandingPage() {
   const [activeRole, setActiveRole] = useState<"physician" | "investor">("physician")
+  const [showPrivacy, setShowPrivacy] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
+  const [showContact, setShowContact] = useState(false)
 
   return (
     <main className="min-h-screen bg-background">
@@ -296,18 +299,160 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-sm text-muted-foreground">
           <div>© 2025 White Coat Capital. All rights reserved.</div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-foreground transition">
+            <button onClick={() => setShowPrivacy(true)} className="hover:text-foreground transition">
               Privacy
-            </a>
-            <a href="#" className="hover:text-foreground transition">
+            </button>
+            <button onClick={() => setShowTerms(true)} className="hover:text-foreground transition">
               Terms
-            </a>
-            <a href="#" className="hover:text-foreground transition">
+            </button>
+            <button onClick={() => setShowContact(true)} className="hover:text-foreground transition">
               Contact
-            </a>
+            </button>
           </div>
         </div>
       </footer>
+
+      {/* Privacy Modal */}
+      {showPrivacy && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Privacy Policy</h3>
+              <button onClick={() => setShowPrivacy(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <p className="text-muted-foreground mb-4">Last updated: January 2025</p>
+
+              <h4 className="font-semibold mt-6 mb-2">Information We Collect</h4>
+              <p className="text-muted-foreground mb-4">
+                We collect information you provide directly, including name, email, financial information for loan applications,
+                and any other information you choose to provide.
+              </p>
+
+              <h4 className="font-semibold mt-6 mb-2">How We Use Your Information</h4>
+              <p className="text-muted-foreground mb-4">
+                We use collected information to provide our services, process applications, communicate with you,
+                and improve our platform.
+              </p>
+
+              <h4 className="font-semibold mt-6 mb-2">Data Security</h4>
+              <p className="text-muted-foreground mb-4">
+                We implement industry-standard security measures to protect your personal information,
+                including encryption and secure data storage.
+              </p>
+
+              <h4 className="font-semibold mt-6 mb-2">Your Rights</h4>
+              <p className="text-muted-foreground mb-4">
+                You have the right to access, correct, or delete your personal information.
+                Contact us at privacy@whitecoatcapital.com for any privacy-related requests.
+              </p>
+            </div>
+            <Button className="w-full mt-6" onClick={() => setShowPrivacy(false)}>Close</Button>
+          </Card>
+        </div>
+      )}
+
+      {/* Terms Modal */}
+      {showTerms && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Terms of Service</h3>
+              <button onClick={() => setShowTerms(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <p className="text-muted-foreground mb-4">Last updated: January 2025</p>
+
+              <h4 className="font-semibold mt-6 mb-2">Acceptance of Terms</h4>
+              <p className="text-muted-foreground mb-4">
+                By accessing or using White Coat Capital's services, you agree to be bound by these Terms of Service
+                and all applicable laws and regulations.
+              </p>
+
+              <h4 className="font-semibold mt-6 mb-2">Use of Services</h4>
+              <p className="text-muted-foreground mb-4">
+                Our services are intended for physicians and accredited investors. You must provide accurate information
+                and maintain the confidentiality of your account credentials.
+              </p>
+
+              <h4 className="font-semibold mt-6 mb-2">Financial Disclosures</h4>
+              <p className="text-muted-foreground mb-4">
+                All investment opportunities carry risk. Past performance does not guarantee future results.
+                Please review all offering documents carefully before investing.
+              </p>
+
+              <h4 className="font-semibold mt-6 mb-2">Limitation of Liability</h4>
+              <p className="text-muted-foreground mb-4">
+                White Coat Capital shall not be liable for any indirect, incidental, special, or consequential damages
+                arising from the use of our services.
+              </p>
+            </div>
+            <Button className="w-full mt-6" onClick={() => setShowTerms(false)}>Close</Button>
+          </Card>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {showContact && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Contact Us</h3>
+              <button onClick={() => setShowContact(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+                <Mail className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Email</p>
+                  <p className="text-sm text-muted-foreground">info@whitecoatcapital.com</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+                <Phone className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Phone</p>
+                  <p className="text-sm text-muted-foreground">1-800-WCC-FUND</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+                <MapPin className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium">Address</p>
+                  <p className="text-sm text-muted-foreground">123 Financial District, NY 10004</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Your Email</label>
+                <input
+                  type="email"
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Message</label>
+                <textarea
+                  placeholder="How can we help you?"
+                  rows={3}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background resize-none"
+                />
+              </div>
+              <Button className="w-full" onClick={() => setShowContact(false)}>Send Message</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </main>
   )
 }

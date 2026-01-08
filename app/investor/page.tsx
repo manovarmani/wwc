@@ -40,7 +40,7 @@ export default function InvestorPage() {
               <p className="text-muted-foreground mb-6">
                 Explore current physician funding opportunities with detailed financial metrics and risk assessments.
               </p>
-              <Button className="w-full gap-2">
+              <Button className="w-full gap-2" onClick={() => setView("dashboard")}>
                 Browse Opportunities <TrendingUp className="h-4 w-4" />
               </Button>
             </Card>

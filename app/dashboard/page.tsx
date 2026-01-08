@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { TrendingUp, Users, DollarSign, Calendar, Loader2, LogOut } from "lucide-react"
+import { TrendingUp, Users, DollarSign, Calendar, Loader2, LogOut, X, Briefcase, MessageSquare, FileText, Phone, Mail, CheckCircle2 } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -63,6 +63,10 @@ interface DashboardData {
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showCareerModal, setShowCareerModal] = useState(false)
+  const [showSupportModal, setShowSupportModal] = useState(false)
+  const [supportMessage, setSupportMessage] = useState("")
+  const [supportSubmitted, setSupportSubmitted] = useState(false)
   const router = useRouter()
   const isMobile = useIsMobile()
   const supabase = createClient()
@@ -301,11 +305,17 @@ export default function Dashboard() {
                         <div className="font-semibold mb-1">Community Forum</div>
                         <div className="text-sm text-muted-foreground">Connect with other physicians</div>
                       </Link>
-                      <button className="w-full p-3 text-left hover:bg-secondary/50 rounded-lg transition">
+                      <button
+                        className="w-full p-3 text-left hover:bg-secondary/50 rounded-lg transition"
+                        onClick={() => setShowCareerModal(true)}
+                      >
                         <div className="font-semibold mb-1">Career Resources</div>
                         <div className="text-sm text-muted-foreground">Interview prep & salary negotiations</div>
                       </button>
-                      <button className="w-full p-3 text-left hover:bg-secondary/50 rounded-lg transition">
+                      <button
+                        className="w-full p-3 text-left hover:bg-secondary/50 rounded-lg transition"
+                        onClick={() => setShowSupportModal(true)}
+                      >
                         <div className="font-semibold mb-1">Concierge Support</div>
                         <div className="text-sm text-muted-foreground">24/7 dedicated support team</div>
                       </button>
@@ -316,6 +326,142 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* Career Resources Modal */}
+        {showCareerModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold">Career Resources</h3>
+                <button onClick={() => setShowCareerModal(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 border border-border rounded-lg hover:border-primary transition cursor-pointer">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Briefcase className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">Interview Preparation</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Access mock interviews, common questions, and expert tips for physician job interviews.</p>
+                </div>
+
+                <div className="p-4 border border-border rounded-lg hover:border-primary transition cursor-pointer">
+                  <div className="flex items-center gap-3 mb-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">Salary Negotiation Guide</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Learn strategies to negotiate your compensation package effectively.</p>
+                </div>
+
+                <div className="p-4 border border-border rounded-lg hover:border-primary transition cursor-pointer">
+                  <div className="flex items-center gap-3 mb-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">Contract Review</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Get expert guidance on employment contracts and what to watch for.</p>
+                </div>
+
+                <div className="p-4 border border-border rounded-lg hover:border-primary transition cursor-pointer">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <h4 className="font-semibold">Career Coaching</h4>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Schedule 1-on-1 sessions with physician career experts.</p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-border">
+                <p className="text-sm text-muted-foreground text-center">
+                  All resources are included free with your WCC membership.
+                </p>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Concierge Support Modal */}
+        {showSupportModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-md p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold">Concierge Support</h3>
+                <button
+                  onClick={() => {
+                    setShowSupportModal(false)
+                    setSupportMessage("")
+                    setSupportSubmitted(false)
+                  }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {supportSubmitted ? (
+                <div className="text-center py-8">
+                  <CheckCircle2 className="h-12 w-12 text-primary mx-auto mb-4" />
+                  <h4 className="text-lg font-semibold mb-2">Message Sent!</h4>
+                  <p className="text-muted-foreground">Our team will get back to you within 24 hours.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-4 mb-6">
+                    <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+                      <Phone className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">Call Us</p>
+                        <p className="text-sm text-muted-foreground">1-800-WCC-HELP</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+                      <Mail className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">Email Support</p>
+                        <p className="text-sm text-muted-foreground">support@whitecoatcapital.com</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium">Live Chat</p>
+                        <p className="text-sm text-muted-foreground">Available 24/7</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border pt-4">
+                    <label className="block text-sm font-medium mb-2">Send a Message</label>
+                    <textarea
+                      value={supportMessage}
+                      onChange={(e) => setSupportMessage(e.target.value)}
+                      placeholder="How can we help you today?"
+                      rows={3}
+                      className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background resize-none mb-4"
+                    />
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        if (supportMessage.trim()) {
+                          setSupportSubmitted(true)
+                          setTimeout(() => {
+                            setShowSupportModal(false)
+                            setSupportMessage("")
+                            setSupportSubmitted(false)
+                          }, 2000)
+                        }
+                      }}
+                      disabled={!supportMessage.trim()}
+                    >
+                      Send Message
+                    </Button>
+                  </div>
+                </>
+              )}
+            </Card>
+          </div>
+        )}
       </main>
     )
   }

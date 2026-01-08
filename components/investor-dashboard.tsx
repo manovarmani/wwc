@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowUp, DollarSign, TrendingUp, Filter, Download, ChevronLeft, Loader2 } from "lucide-react"
+import { ArrowUp, DollarSign, TrendingUp, Filter, Download, ChevronLeft, Loader2, X, CheckCircle2 } from "lucide-react"
 import PortfolioOverview from "./portfolio-overview"
 import DealsList from "./deals-list"
 import PerformanceChart from "./performance-chart"
@@ -40,6 +40,12 @@ export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<"overview" | "deals" | "performance">("overview")
   const [data, setData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [filterDateRange, setFilterDateRange] = useState("all")
+  const [filterSpecialty, setFilterSpecialty] = useState("all")
+  const [exportFormat, setExportFormat] = useState("csv")
+  const [exportStarted, setExportStarted] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -105,11 +111,11 @@ export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
           <p className="text-muted-foreground mt-1">Track your physician financing portfolio and returns</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+          <Button variant="outline" size="sm" className="gap-2 bg-transparent" onClick={() => setShowFilterModal(true)}>
             <Filter className="h-4 w-4" />
             Filter
           </Button>
-          <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+          <Button variant="outline" size="sm" className="gap-2 bg-transparent" onClick={() => setShowExportModal(true)}>
             <Download className="h-4 w-4" />
             Export
           </Button>
@@ -193,6 +199,165 @@ export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
       {activeTab === "overview" && <PortfolioOverview investments={data?.investments || []} />}
       {activeTab === "deals" && <DealsList />}
       {activeTab === "performance" && <PerformanceChart />}
+
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Filter Data</h3>
+              <button onClick={() => setShowFilterModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Date Range</label>
+                <select
+                  value={filterDateRange}
+                  onChange={(e) => setFilterDateRange(e.target.value)}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+                >
+                  <option value="all">All Time</option>
+                  <option value="30">Last 30 Days</option>
+                  <option value="90">Last 90 Days</option>
+                  <option value="365">Last Year</option>
+                  <option value="ytd">Year to Date</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Specialty</label>
+                <select
+                  value={filterSpecialty}
+                  onChange={(e) => setFilterSpecialty(e.target.value)}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+                >
+                  <option value="all">All Specialties</option>
+                  <option value="cardiology">Cardiology</option>
+                  <option value="orthopedics">Orthopedics</option>
+                  <option value="dermatology">Dermatology</option>
+                  <option value="radiology">Radiology</option>
+                  <option value="surgery">Surgery</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  setFilterDateRange("all")
+                  setFilterSpecialty("all")
+                }}>
+                  Reset
+                </Button>
+                <Button className="flex-1" onClick={() => setShowFilterModal(false)}>
+                  Apply Filters
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Export Data</h3>
+              <button
+                onClick={() => {
+                  setShowExportModal(false)
+                  setExportStarted(false)
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {exportStarted ? (
+              <div className="text-center py-8">
+                <CheckCircle2 className="h-12 w-12 text-primary mx-auto mb-4" />
+                <h4 className="text-lg font-semibold mb-2">Export Started!</h4>
+                <p className="text-muted-foreground">Your download will begin shortly.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Export Format</label>
+                  <div className="space-y-2">
+                    {[
+                      { value: "csv", label: "CSV", desc: "Best for Excel and spreadsheets" },
+                      { value: "pdf", label: "PDF", desc: "Best for reports and printing" },
+                      { value: "xlsx", label: "Excel (.xlsx)", desc: "Native Excel format" },
+                    ].map((format) => (
+                      <label
+                        key={format.value}
+                        className={`flex items-center p-3 border rounded-lg cursor-pointer transition ${
+                          exportFormat === format.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="exportFormat"
+                          value={format.value}
+                          checked={exportFormat === format.value}
+                          onChange={(e) => setExportFormat(e.target.value)}
+                          className="sr-only"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium">{format.label}</p>
+                          <p className="text-sm text-muted-foreground">{format.desc}</p>
+                        </div>
+                        {exportFormat === format.value && (
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Include</label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" defaultChecked className="rounded border-border" />
+                      <span className="text-sm">Portfolio Summary</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" defaultChecked className="rounded border-border" />
+                      <span className="text-sm">Investment Details</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" defaultChecked className="rounded border-border" />
+                      <span className="text-sm">Distribution History</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" className="rounded border-border" />
+                      <span className="text-sm">Tax Documents</span>
+                    </label>
+                  </div>
+                </div>
+
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    setExportStarted(true)
+                    setTimeout(() => {
+                      setShowExportModal(false)
+                      setExportStarted(false)
+                    }, 2000)
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download {exportFormat.toUpperCase()}
+                </Button>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
