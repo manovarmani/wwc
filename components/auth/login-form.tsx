@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Mail, Lock, Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LoginForm({ onSwitchMode }: { onSwitchMode: () => void }) {
   const [email, setEmail] = useState("")
@@ -13,37 +13,60 @@ export default function LoginForm({ onSwitchMode }: { onSwitchMode: () => void }
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const router = useRouter()
+  const supabase = createClient()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
 
-    // Simulate auth delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    // Mock authentication
-    if (email && password) {
-      // Store user session (mock)
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          email,
-          role: email.includes("physician") ? "physician" : "investor",
-          id: Math.random().toString(36).substr(2, 9),
-        }),
-      )
-
-      // Route based on email pattern
-      if (email.includes("physician")) {
-        router.push("/physician")
-      } else {
-        router.push("/investor")
+      if (signInError) {
+        setError(signInError.message)
+        setIsLoading(false)
+        return
       }
-    } else {
-      setError("Please fill in all fields")
+
+      if (data.user) {
+        // Fetch user data to get role
+        const response = await fetch("/api/user")
+        if (response.ok) {
+          const userData = await response.json()
+          router.push(userData.role === "INVESTOR" ? "/investor" : "/dashboard")
+        } else {
+          router.push("/dashboard")
+        }
+        router.refresh()
+      }
+    } catch {
+      setError("An unexpected error occurred")
       setIsLoading(false)
     }
+  }
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Please enter your email address first")
+      return
+    }
+
+    setIsLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    })
+
+    if (error) {
+      setError(error.message)
+    } else {
+      setError("")
+      alert("Password reset email sent! Check your inbox.")
+    }
+    setIsLoading(false)
   }
 
   return (
@@ -63,6 +86,7 @@ export default function LoginForm({ onSwitchMode }: { onSwitchMode: () => void }
             onChange={(e) => setEmail(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-secondary/50"
             disabled={isLoading}
+            required
           />
         </div>
       </div>
@@ -73,9 +97,13 @@ export default function LoginForm({ onSwitchMode }: { onSwitchMode: () => void }
           <label htmlFor="password" className="text-sm font-medium">
             Password
           </label>
-          <a href="#" className="text-sm text-primary hover:underline">
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            className="text-sm text-primary hover:underline"
+          >
             Forgot?
-          </a>
+          </button>
         </div>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -87,6 +115,7 @@ export default function LoginForm({ onSwitchMode }: { onSwitchMode: () => void }
             onChange={(e) => setPassword(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-secondary/50"
             disabled={isLoading}
+            required
           />
         </div>
       </div>
@@ -97,11 +126,6 @@ export default function LoginForm({ onSwitchMode }: { onSwitchMode: () => void }
           {error}
         </div>
       )}
-
-      {/* Demo Info */}
-      <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg text-sm text-primary">
-        <strong>Demo:</strong> Use email with "physician" for physician account, otherwise investor account.
-      </div>
 
       {/* Submit */}
       <Button type="submit" className="w-full gap-2" disabled={isLoading} size="lg">
@@ -117,7 +141,7 @@ export default function LoginForm({ onSwitchMode }: { onSwitchMode: () => void }
 
       {/* Switch Mode */}
       <p className="text-center text-sm text-muted-foreground">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <button
           type="button"
           onClick={onSwitchMode}

@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Mail, Lock, User, Loader2, CheckCircle } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void }) {
   const [formData, setFormData] = useState({
@@ -13,12 +13,13 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
     email: "",
     password: "",
     confirmPassword: "",
-    role: "investor",
+    role: "PHYSICIAN",
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const router = useRouter()
+  const supabase = createClient()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -47,30 +48,59 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
 
     setIsLoading(true)
 
-    // Simulate signup
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    // Store user session (mock)
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        name: formData.name,
+    try {
+      // Sign up with Supabase
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
-        role: formData.role,
-        id: Math.random().toString(36).substr(2, 9),
-      }),
-    )
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+            role: formData.role,
+          },
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?role=${formData.role}`,
+        },
+      })
 
-    setSuccess(true)
-
-    // Redirect after success message
-    setTimeout(() => {
-      if (formData.role === "physician") {
-        router.push("/physician")
-      } else {
-        router.push("/investor")
+      if (signUpError) {
+        setError(signUpError.message)
+        setIsLoading(false)
+        return
       }
-    }, 2000)
+
+      if (data.user) {
+        // If email confirmation is disabled, user is logged in immediately
+        if (data.session) {
+          // Create user in our database
+          const response = await fetch("/api/auth/callback", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              supabaseId: data.user.id,
+              email: formData.email,
+              name: formData.name,
+              role: formData.role,
+            }),
+          })
+
+          if (!response.ok) {
+            // User creation handled by callback, proceed
+          }
+
+          setSuccess(true)
+          setTimeout(() => {
+            router.push(formData.role === "INVESTOR" ? "/investor" : "/physician")
+            router.refresh()
+          }, 2000)
+        } else {
+          // Email confirmation required
+          setSuccess(true)
+        }
+      }
+    } catch {
+      setError("An unexpected error occurred")
+      setIsLoading(false)
+    }
   }
 
   if (success) {
@@ -82,7 +112,12 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
           </div>
         </div>
         <h3 className="text-xl font-semibold mb-2">Account Created!</h3>
-        <p className="text-muted-foreground mb-6">Welcome to White Coat Capital. Redirecting you now...</p>
+        <p className="text-muted-foreground mb-6">
+          Check your email for a confirmation link, then you can sign in.
+        </p>
+        <Button onClick={onSwitchMode} variant="outline">
+          Go to Sign In
+        </Button>
       </div>
     )
   }
@@ -105,19 +140,20 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
             onChange={handleChange}
             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-secondary/50"
             disabled={isLoading}
+            required
           />
         </div>
       </div>
 
       {/* Email */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-2">
+        <label htmlFor="signup-email" className="block text-sm font-medium mb-2">
           Email Address
         </label>
         <div className="relative">
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
-            id="email"
+            id="signup-email"
             type="email"
             name="email"
             placeholder="you@example.com"
@@ -125,6 +161,7 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
             onChange={handleChange}
             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-secondary/50"
             disabled={isLoading}
+            required
           />
         </div>
       </div>
@@ -142,20 +179,20 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
           className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-secondary/50"
           disabled={isLoading}
         >
-          <option value="investor">Investor</option>
-          <option value="physician">Physician</option>
+          <option value="PHYSICIAN">Physician</option>
+          <option value="INVESTOR">Investor</option>
         </select>
       </div>
 
       {/* Password */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium mb-2">
+        <label htmlFor="signup-password" className="block text-sm font-medium mb-2">
           Password
         </label>
         <div className="relative">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
-            id="password"
+            id="signup-password"
             type="password"
             name="password"
             placeholder="••••••••"
@@ -163,6 +200,7 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
             onChange={handleChange}
             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-secondary/50"
             disabled={isLoading}
+            required
           />
         </div>
         <p className="text-xs text-muted-foreground mt-1">At least 8 characters</p>
@@ -184,6 +222,7 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
             onChange={handleChange}
             className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-secondary/50"
             disabled={isLoading}
+            required
           />
         </div>
       </div>

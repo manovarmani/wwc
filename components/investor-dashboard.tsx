@@ -1,15 +1,96 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowUp, DollarSign, TrendingUp, Filter, Download, ChevronLeft } from "lucide-react"
+import { ArrowUp, DollarSign, TrendingUp, Filter, Download, ChevronLeft, Loader2 } from "lucide-react"
 import PortfolioOverview from "./portfolio-overview"
 import DealsList from "./deals-list"
 import PerformanceChart from "./performance-chart"
 
+interface DashboardData {
+  metrics: {
+    totalInvested: number
+    currentValue: number
+    totalDistributions: number
+    ytdReturn: number
+    portfolioIRR: number
+    investmentCount: number
+  }
+  investments: Array<{
+    id: string
+    amount: string
+    currentValue: string
+    deal: {
+      id: string
+      name: string
+      specialty: string | null
+      targetIRR: string | null
+    }
+    distributions: Array<{
+      id: string
+      amount: string
+      paidAt: string
+    }>
+  }>
+  bySpecialty: Record<string, { invested: number; currentValue: number; count: number }>
+}
+
 export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState<"overview" | "deals" | "performance">("overview")
+  const [data, setData] = useState<DashboardData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await fetch("/api/dashboard")
+        if (response.ok) {
+          const result = await response.json()
+          if (result.role === "INVESTOR") {
+            setData(result)
+          }
+        }
+      } catch {
+        // Handle error
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(2)}M`
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(1)}k`
+    }
+    return `$${value.toFixed(0)}`
+  }
+
+  // Use real data or demo defaults
+  const metrics = data?.metrics || {
+    totalInvested: 0,
+    currentValue: 0,
+    totalDistributions: 0,
+    ytdReturn: 0,
+    portfolioIRR: 0,
+    investmentCount: 0,
+  }
+
+  const hasInvestments = metrics.totalInvested > 0
+  const gainPercent = metrics.totalInvested > 0
+    ? ((metrics.currentValue - metrics.totalInvested) / metrics.totalInvested * 100).toFixed(1)
+    : "0"
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,8 +122,10 @@ export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Total Invested</p>
-              <p className="text-3xl font-bold">$1.25M</p>
-              <p className="text-xs text-muted-foreground mt-2">Across 12 deals</p>
+              <p className="text-3xl font-bold">{formatCurrency(metrics.totalInvested)}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Across {metrics.investmentCount} deal{metrics.investmentCount !== 1 ? "s" : ""}
+              </p>
             </div>
             <DollarSign className="h-8 w-8 text-primary opacity-20" />
           </div>
@@ -52,11 +135,13 @@ export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Current Value</p>
-              <p className="text-3xl font-bold">$1.48M</p>
-              <div className="flex items-center gap-1 mt-2">
-                <ArrowUp className="h-4 w-4 text-green-500" />
-                <p className="text-xs font-medium text-green-600">+18.4% gain</p>
-              </div>
+              <p className="text-3xl font-bold">{formatCurrency(metrics.currentValue)}</p>
+              {hasInvestments && (
+                <div className="flex items-center gap-1 mt-2">
+                  <ArrowUp className="h-4 w-4 text-green-500" />
+                  <p className="text-xs font-medium text-green-600">+{gainPercent}% gain</p>
+                </div>
+              )}
             </div>
             <TrendingUp className="h-8 w-8 text-green-500 opacity-20" />
           </div>
@@ -65,8 +150,8 @@ export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
         <Card className="p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">Avg. IRR</p>
-              <p className="text-3xl font-bold">13.2%</p>
+              <p className="text-sm text-muted-foreground mb-1">Portfolio IRR</p>
+              <p className="text-3xl font-bold">{metrics.portfolioIRR.toFixed(1)}%</p>
               <p className="text-xs text-muted-foreground mt-2">Projected annual return</p>
             </div>
             <TrendingUp className="h-8 w-8 text-primary opacity-20" />
@@ -76,9 +161,9 @@ export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
         <Card className="p-6">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">YTD Distributions</p>
-              <p className="text-3xl font-bold">$84.5k</p>
-              <p className="text-xs text-muted-foreground mt-2">From Q1 & Q2 payouts</p>
+              <p className="text-sm text-muted-foreground mb-1">Total Distributions</p>
+              <p className="text-3xl font-bold">{formatCurrency(metrics.totalDistributions)}</p>
+              <p className="text-xs text-muted-foreground mt-2">Lifetime payouts</p>
             </div>
             <DollarSign className="h-8 w-8 text-primary opacity-20" />
           </div>
@@ -98,14 +183,14 @@ export default function InvestorDashboard({ onBack }: { onBack: () => void }) {
             }`}
           >
             {tab === "overview" && "Portfolio Overview"}
-            {tab === "deals" && "Your Deals"}
+            {tab === "deals" && "Available Deals"}
             {tab === "performance" && "Performance"}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      {activeTab === "overview" && <PortfolioOverview />}
+      {activeTab === "overview" && <PortfolioOverview investments={data?.investments || []} />}
       {activeTab === "deals" && <DealsList />}
       {activeTab === "performance" && <PerformanceChart />}
     </div>

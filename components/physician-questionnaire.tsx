@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ChevronRight, ChevronLeft } from "lucide-react"
+import { ChevronRight, ChevronLeft, Loader2 } from "lucide-react"
 
 interface QuestionnaireData {
   fullName: string
@@ -17,14 +17,29 @@ interface QuestionnaireData {
   careerGoals: string
 }
 
+interface ApplicationResult {
+  id: string
+  proposals: Array<{
+    id: string
+    name: string
+    amount: string
+    interestRate: string
+    termMonths: number
+    monthlyPayment: string
+    betterOffScore: number | null
+    description: string | null
+  }>
+}
+
 export default function PhysicianQuestionnaire({
   onSubmit,
 }: {
-  onSubmit: (data: QuestionnaireData) => void
+  onSubmit: (data: QuestionnaireData, application: ApplicationResult) => void
 }) {
   const [step, setStep] = useState(0)
   const [data, setData] = useState<Partial<QuestionnaireData>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const steps = [
     {
@@ -52,7 +67,7 @@ export default function PhysicianQuestionnaire({
   const currentStep = steps[step]
   const progress = ((step + 1) / steps.length) * 100
 
-  const handleInputChange = (field: keyof QuestionnaireData, value: any) => {
+  const handleInputChange = (field: keyof QuestionnaireData, value: string | number) => {
     setData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -72,10 +87,36 @@ export default function PhysicianQuestionnaire({
 
   const handleSubmit = async () => {
     setIsLoading(true)
-    // Simulate processing time
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    onSubmit(data as QuestionnaireData)
-    setIsLoading(false)
+    setError("")
+
+    try {
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: data.fullName,
+          degree: data.medicalDegree,
+          specialty: data.specialty,
+          yearsInPractice: data.yearsInPractice,
+          estimatedIncome: data.estimatedIncome,
+          medicalDebt: data.currentDebt,
+          fundingNeeded: data.fundingNeeded,
+          fundingTimeline: data.fundingTimeline,
+          careerGoals: data.careerGoals,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to submit application")
+      }
+
+      const application = await response.json()
+      onSubmit(data as QuestionnaireData, application)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred")
+      setIsLoading(false)
+    }
   }
 
   const isCurrentStepComplete = currentStep.fields.every((field) => data[field as keyof QuestionnaireData])
@@ -144,6 +185,9 @@ export default function PhysicianQuestionnaire({
                 <option value="Pediatrics">Pediatrics</option>
                 <option value="Psychiatry">Psychiatry</option>
                 <option value="Radiology">Radiology</option>
+                <option value="Anesthesiology">Anesthesiology</option>
+                <option value="Dermatology">Dermatology</option>
+                <option value="Emergency Medicine">Emergency Medicine</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -251,15 +295,33 @@ export default function PhysicianQuestionnaire({
         </div>
       </Card>
 
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex gap-4 justify-between">
-        <Button variant="outline" onClick={handlePrevious} disabled={step === 0} className="gap-2 bg-transparent">
+        <Button variant="outline" onClick={handlePrevious} disabled={step === 0 || isLoading} className="gap-2 bg-transparent">
           <ChevronLeft className="h-4 w-4" />
           Previous
         </Button>
         <Button onClick={handleNext} disabled={!isCurrentStepComplete || isLoading} className="gap-2">
-          {step === steps.length - 1 ? "Generate Proposals" : "Next"}
-          {step < steps.length - 1 && <ChevronRight className="h-4 w-4" />}
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : step === steps.length - 1 ? (
+            "Generate Proposals"
+          ) : (
+            <>
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>

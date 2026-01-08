@@ -7,18 +7,33 @@ import PhysicianQuestionnaire from "@/components/physician-questionnaire"
 import ProposalsDisplay from "@/components/proposals-display"
 import { Logo } from "@/components/logo"
 
+interface Application {
+  id: string
+  fullName: string | null
+  proposals: Array<{
+    id: string
+    name: string
+    amount: string
+    interestRate: string
+    termMonths: number
+    monthlyPayment: string
+    betterOffScore: number | null
+    description: string | null
+  }>
+}
+
 export default function PhysicianPage() {
   const [step, setStep] = useState<"questionnaire" | "proposals">("questionnaire")
-  const [proposalData, setProposalData] = useState(null)
+  const [application, setApplication] = useState<Application | null>(null)
 
-  const handleQuestionnaire = (data: any) => {
-    setProposalData(data)
+  const handleQuestionnaireSubmit = (_data: unknown, app: Application) => {
+    setApplication(app)
     setStep("proposals")
   }
 
   const handleReset = () => {
     setStep("questionnaire")
-    setProposalData(null)
+    setApplication(null)
   }
 
   return (
@@ -36,8 +51,10 @@ export default function PhysicianPage() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {step === "questionnaire" && <PhysicianQuestionnaire onSubmit={handleQuestionnaire} />}
-        {step === "proposals" && proposalData && <ProposalsDisplay data={proposalData} onReset={handleReset} />}
+        {step === "questionnaire" && <PhysicianQuestionnaire onSubmit={handleQuestionnaireSubmit} />}
+        {step === "proposals" && application && (
+          <ProposalsDisplay application={application} onReset={handleReset} />
+        )}
       </div>
     </main>
   )

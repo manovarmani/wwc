@@ -4,104 +4,98 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight } from "lucide-react"
 
-interface PortfolioPosition {
+interface Investment {
   id: string
-  physicianName: string
-  specialty: string
-  investmentAmount: number
-  currentValue: number
-  returnPercentage: number
-  status: "active" | "funded" | "repaying"
-  interestRate: number
-  nextDistribution: string
+  amount: string
+  currentValue: string
+  deal: {
+    id: string
+    name: string
+    specialty: string | null
+    targetIRR: string | null
+  }
+  distributions: Array<{
+    id: string
+    amount: string
+    paidAt: string
+  }>
 }
 
-const positions: PortfolioPosition[] = [
-  {
-    id: "1",
-    physicianName: "Dr. Emily Chen",
-    specialty: "Cardiology",
-    investmentAmount: 125000,
-    currentValue: 143750,
-    returnPercentage: 15,
-    status: "active",
-    interestRate: 4.5,
-    nextDistribution: "Jan 15, 2025",
-  },
-  {
-    id: "2",
-    physicianName: "Dr. Marcus Thompson",
-    specialty: "Orthopedic Surgery",
-    investmentAmount: 150000,
-    currentValue: 171000,
-    returnPercentage: 14,
-    status: "repaying",
-    interestRate: 5.5,
-    nextDistribution: "Jan 20, 2025",
-  },
-  {
-    id: "3",
-    physicianName: "Dr. Sarah Williams",
-    specialty: "Radiology",
-    investmentAmount: 100000,
-    currentValue: 118000,
-    returnPercentage: 18,
-    status: "funded",
-    interestRate: 6.5,
-    nextDistribution: "Jan 25, 2025",
-  },
-  {
-    id: "4",
-    physicianName: "Dr. James Rodriguez",
-    specialty: "General Practice",
-    investmentAmount: 200000,
-    currentValue: 228000,
-    returnPercentage: 14,
-    status: "active",
-    interestRate: 4.5,
-    nextDistribution: "Feb 5, 2025",
-  },
-]
+interface PortfolioOverviewProps {
+  investments: Investment[]
+}
 
-export default function PortfolioOverview() {
+export default function PortfolioOverview({ investments }: PortfolioOverviewProps) {
+  // Calculate portfolio stats
+  const totalInvested = investments.reduce((sum, inv) => sum + parseFloat(inv.amount), 0)
+  const totalValue = investments.reduce((sum, inv) => sum + parseFloat(inv.currentValue), 0)
+
+  // Group by status (simplified - in real app would track actual status)
+  const activeCount = investments.length
+  const totalDistributions = investments.reduce(
+    (sum, inv) => sum + inv.distributions.reduce((dSum, d) => dSum + parseFloat(d.amount), 0),
+    0
+  )
+
+  // If no investments, show empty state
+  if (investments.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-12 text-center">
+          <h3 className="text-xl font-semibold mb-2">No Investments Yet</h3>
+          <p className="text-muted-foreground mb-4">
+            Browse available deals to start building your physician financing portfolio.
+          </p>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Portfolio Breakdown */}
       <div className="grid md:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h3 className="font-semibold mb-6">Portfolio Allocation by Status</h3>
+          <h3 className="font-semibold mb-6">Portfolio Summary</h3>
           <div className="space-y-4">
-            {[
-              { label: "Active", value: 50, color: "bg-primary" },
-              { label: "Repaying", value: 35, color: "bg-green-500" },
-              { label: "Funded", value: 15, color: "bg-blue-500" },
-            ].map((item) => (
-              <div key={item.label}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium">{item.label}</span>
-                  <span className="text-sm text-muted-foreground">{item.value}%</span>
-                </div>
-                <div className="w-full bg-secondary rounded-full h-2">
-                  <div className={`${item.color} h-full rounded-full`} style={{ width: `${item.value}%` }} />
-                </div>
-              </div>
-            ))}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Total Invested</span>
+              <span className="font-semibold">${(totalInvested / 1000).toFixed(0)}k</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Current Value</span>
+              <span className="font-semibold">${(totalValue / 1000).toFixed(0)}k</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Total Return</span>
+              <span className="font-semibold text-green-600">
+                +{((totalValue - totalInvested) / totalInvested * 100).toFixed(1)}%
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Active Positions</span>
+              <span className="font-semibold">{activeCount}</span>
+            </div>
           </div>
         </Card>
 
         <Card className="p-6">
-          <h3 className="font-semibold mb-6">Return Distribution</h3>
+          <h3 className="font-semibold mb-6">Distribution History</h3>
           <div className="space-y-4">
-            {[
-              { label: "This Quarter", value: "$32.1k" },
-              { label: "Last Quarter", value: "$28.3k" },
-              { label: "Two Quarters Ago", value: "$24.1k" },
-            ].map((item) => (
-              <div key={item.label} className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">{item.label}</span>
-                <span className="font-semibold">{item.value}</span>
-              </div>
-            ))}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Total Distributions</span>
+              <span className="font-semibold">${(totalDistributions / 1000).toFixed(1)}k</span>
+            </div>
+            {investments.slice(0, 3).map((inv) => {
+              const lastDist = inv.distributions[0]
+              if (!lastDist) return null
+              return (
+                <div key={inv.id} className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">{inv.deal.name}</span>
+                  <span className="font-medium">${parseFloat(lastDist.amount).toFixed(0)}</span>
+                </div>
+              )
+            })}
           </div>
         </Card>
       </div>
@@ -110,49 +104,48 @@ export default function PortfolioOverview() {
       <div>
         <h3 className="font-semibold mb-4">Your Positions</h3>
         <div className="space-y-3">
-          {positions.map((position) => (
-            <Card key={position.id} className="p-4 hover:border-primary transition cursor-pointer">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-semibold">{position.physicianName}</h4>
-                    <Badge
-                      variant={
-                        position.status === "active"
-                          ? "default"
-                          : position.status === "repaying"
-                            ? "secondary"
-                            : "outline"
-                      }
-                    >
-                      {position.status === "active" ? "Active" : position.status === "repaying" ? "Repaying" : "Funded"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-3">{position.specialty}</p>
+          {investments.map((investment) => {
+            const invested = parseFloat(investment.amount)
+            const current = parseFloat(investment.currentValue)
+            const returnPct = ((current - invested) / invested * 100).toFixed(1)
+            const irr = investment.deal.targetIRR ? parseFloat(investment.deal.targetIRR) : null
 
-                  <div className="grid grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground text-xs mb-1">Invested</p>
-                      <p className="font-semibold">${(position.investmentAmount / 1000).toFixed(0)}k</p>
+            return (
+              <Card key={investment.id} className="p-4 hover:border-primary transition cursor-pointer">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h4 className="font-semibold">{investment.deal.name}</h4>
+                      <Badge variant="default">Active</Badge>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs mb-1">Current Value</p>
-                      <p className="font-semibold">${(position.currentValue / 1000).toFixed(0)}k</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs mb-1">Return</p>
-                      <p className="font-semibold text-green-600">+{position.returnPercentage}%</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs mb-1">Next Distribution</p>
-                      <p className="font-semibold text-primary">{position.nextDistribution}</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {investment.deal.specialty || "Multi-Specialty"}
+                    </p>
+
+                    <div className="grid grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground text-xs mb-1">Invested</p>
+                        <p className="font-semibold">${(invested / 1000).toFixed(0)}k</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs mb-1">Current Value</p>
+                        <p className="font-semibold">${(current / 1000).toFixed(0)}k</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs mb-1">Return</p>
+                        <p className="font-semibold text-green-600">+{returnPct}%</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs mb-1">Target IRR</p>
+                        <p className="font-semibold text-primary">{irr ? `${irr}%` : "N/A"}</p>
+                      </div>
                     </div>
                   </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
                 </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
-              </div>
-            </Card>
-          ))}
+              </Card>
+            )
+          })}
         </div>
       </div>
     </div>

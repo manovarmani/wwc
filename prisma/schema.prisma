@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  PHYSICIAN
+  INVESTOR
+  ADMIN
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  FUNDED
+  REJECTED
+}
+
+enum ProposalStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum DealStatus {
+  DRAFT
+  OPEN
+  FULLY_FUNDED
+  CLOSED
+  COMPLETED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(PHYSICIAN)
+  avatarUrl String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Supabase auth ID
+  supabaseId String @unique
+
+  // Relations
+  physicianProfile PhysicianProfile?
+  investorProfile  InvestorProfile?
+  applications     FundingApplication[]
+  investments      Investment[]
+
+  @@index([supabaseId])
+  @@index([email])
+}
+
+model PhysicianProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Medical info
+  degree           String? // MD, DO, etc.
+  specialty        String?
+  subspecialty     String?
+  yearsInPractice  Int?
+  medicalSchool    String?
+  residencyProgram String?
+  currentEmployer  String?
+
+  // Financial info
+  estimatedIncome   Decimal? @db.Decimal(12, 2)
+  medicalSchoolDebt Decimal? @db.Decimal(12, 2)
+  otherDebt         Decimal? @db.Decimal(12, 2)
+
+  // Career stage
+  careerStage String? // resident, fellow, attending
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InvestorProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Investor details
+  investorType        String? // individual, family_office, institution
+  accreditedInvestor  Boolean @default(false)
+  investmentFocus     String[]
+  minInvestmentAmount Decimal? @db.Decimal(12, 2)
+  maxInvestmentAmount Decimal? @db.Decimal(12, 2)
+
+  // KYC/AML
+  kycCompleted Boolean   @default(false)
+  kycDate      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FundingApplication {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status ApplicationStatus @default(DRAFT)
+
+  // Questionnaire responses
+  fullName        String?
+  degree          String?
+  specialty       String?
+  yearsInPractice Int?
+  estimatedIncome Decimal? @db.Decimal(12, 2)
+  medicalDebt     Decimal? @db.Decimal(12, 2)
+  fundingNeeded   Decimal? @db.Decimal(12, 2)
+  fundingTimeline String?
+  careerGoals     String?
+  useOfFunds      String?
+
+  // Generated proposals
+  proposals Proposal[]
+
+  // Selected proposal
+  selectedProposalId String?
+
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  fundedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Proposal {
+  id            String   @id @default(cuid())
+  applicationId String
+  application   FundingApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  name        String // e.g., "Growth Accelerator", "Balanced Growth"
+  description String?
+
+  // Terms
+  amount        Decimal @db.Decimal(12, 2)
+  interestRate  Decimal @db.Decimal(5, 2) // e.g., 4.50
+  termMonths    Int
+  monthlyPayment Decimal @db.Decimal(12, 2)
+
+  // Scores
+  betterOffScore Int? // 0-100
+
+  status ProposalStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([applicationId])
+}
+
+model Deal {
+  id     String     @id @default(cuid())
+  status DealStatus @default(DRAFT)
+
+  // Deal info
+  name        String
+  description String?
+  specialty   String? // Orthopedic Surgery, Cardiology, etc.
+  dealType    String? // single_physician, fund, multi_specialty
+
+  // Terms
+  targetAmount    Decimal @db.Decimal(12, 2)
+  minimumInvestment Decimal @db.Decimal(12, 2)
+  currentAmount   Decimal @default(0) @db.Decimal(12, 2)
+
+  // Returns
+  targetIRR       Decimal? @db.Decimal(5, 2)
+  targetMOIC      Decimal? @db.Decimal(5, 2)
+
+  // Timeline
+  termMonths      Int?
+  distributionFrequency String? // monthly, quarterly, annual
+
+  // Linked physician (if single physician deal)
+  physicianApplicationId String?
+
+  // Investments
+  investments Investment[]
+
+  openedAt   DateTime?
+  closedAt   DateTime?
+  maturityAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([specialty])
+}
+
+model Investment {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dealId String
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  // Investment details
+  amount       Decimal @db.Decimal(12, 2)
+  currentValue Decimal @db.Decimal(12, 2)
+
+  // Distributions received
+  distributions Distribution[]
+
+  investedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, dealId])
+  @@index([userId])
+  @@index([dealId])
+}
+
+model Distribution {
+  id           String     @id @default(cuid())
+  investmentId String
+  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+
+  amount      Decimal  @db.Decimal(12, 2)
+  description String?
+  paidAt      DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([investmentId])
+  @@index([paidAt])
+}
+
+// Community features
+model ForumPost {
+  id       String @id @default(cuid())
+  authorId String
+
+  title    String
+  content  String
+  category String? // general, deals, education, success_stories
+
+  likes    Int @default(0)
+
+  comments ForumComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([category])
+}
+
+model ForumComment {
+  id     String    @id @default(cuid())
+  postId String
+  post   ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String
+  content  String
+  likes    Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([authorId])
+}
