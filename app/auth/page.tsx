@@ -1,68 +1,119 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
-import { ChevronLeft, X } from "lucide-react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { ChevronLeft, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import LoginForm from "@/components/auth/login-form"
 import SignupForm from "@/components/auth/signup-form"
 import { Logo } from "@/components/logo"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
-export default function AuthPage() {
+function AuthContent() {
   const [mode, setMode] = useState<"login" | "signup">("login")
   const [showTerms, setShowTerms] = useState(false)
   const [showPrivacy, setShowPrivacy] = useState(false)
+  const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
+  useEffect(() => {
+    // Handle URL params for verification status
+    const verified = searchParams.get("verified")
+    const error = searchParams.get("error")
+    const message = searchParams.get("message")
+
+    if (verified === "true") {
+      setNotification({
+        type: "success",
+        message: "Email verified successfully! You can now sign in.",
+      })
+      setMode("login")
+    } else if (error) {
+      setNotification({
+        type: "error",
+        message: decodeURIComponent(error),
+      })
+    } else if (message) {
+      setNotification({
+        type: "info",
+        message: decodeURIComponent(message),
+      })
+    }
+
+    // Clear URL params after reading
+    if (verified || error || message) {
+      const url = new URL(window.location.href)
+      url.searchParams.delete("verified")
+      url.searchParams.delete("error")
+      url.searchParams.delete("message")
+      url.searchParams.delete("redirect")
+      router.replace(url.pathname, { scroll: false })
+    }
+  }, [searchParams, router])
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background to-secondary/30 flex flex-col">
-      {/* Header */}
-      <header className="border-b border-border/30 bg-background/30 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
-            <ChevronLeft className="h-5 w-5" />
-            <span className="text-sm font-medium">Back to Home</span>
-          </Link>
-          <Logo />
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md">
-          {/* Auth Card */}
-          <div className="bg-card rounded-xl border border-border shadow-lg p-8">
-            {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">{mode === "login" ? "Welcome Back" : "Join WCC"}</h1>
-              <p className="text-muted-foreground">
-                {mode === "login"
-                  ? "Access your investment or physician account"
-                  : "Create your account to get started"}
-              </p>
-            </div>
-
-            {/* Forms */}
-            {mode === "login" ? (
-              <LoginForm onSwitchMode={() => setMode("signup")} />
-            ) : (
-              <SignupForm onSwitchMode={() => setMode("login")} />
-            )}
+    <>
+      {/* Notification Banner */}
+      {notification && (
+        <div
+          className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${
+            notification.type === "success"
+              ? "bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400"
+              : notification.type === "error"
+                ? "bg-destructive/10 border border-destructive/20 text-destructive"
+                : "bg-primary/10 border border-primary/20 text-primary"
+          }`}
+        >
+          {notification.type === "success" ? (
+            <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          )}
+          <div className="flex-1">
+            <p className="text-sm font-medium">{notification.message}</p>
           </div>
+          <button
+            onClick={() => setNotification(null)}
+            className="flex-shrink-0 opacity-70 hover:opacity-100"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
-          {/* Footer */}
-          <p className="text-center text-sm text-muted-foreground mt-6">
-            By continuing, you agree to our{" "}
-            <button onClick={() => setShowTerms(true)} className="text-primary hover:underline">
-              Terms of Service
-            </button>{" "}
-            and{" "}
-            <button onClick={() => setShowPrivacy(true)} className="text-primary hover:underline">
-              Privacy Policy
-            </button>
+      {/* Auth Card */}
+      <div className="bg-card rounded-xl border border-border shadow-lg p-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">{mode === "login" ? "Welcome Back" : "Join WCC"}</h1>
+          <p className="text-muted-foreground">
+            {mode === "login"
+              ? "Access your investment or physician account"
+              : "Create your account to get started"}
           </p>
         </div>
+
+        {/* Forms */}
+        {mode === "login" ? (
+          <LoginForm onSwitchMode={() => setMode("signup")} />
+        ) : (
+          <SignupForm onSwitchMode={() => setMode("login")} />
+        )}
       </div>
+
+      {/* Footer */}
+      <p className="text-center text-sm text-muted-foreground mt-6">
+        By continuing, you agree to our{" "}
+        <button onClick={() => setShowTerms(true)} className="text-primary hover:underline">
+          Terms of Service
+        </button>{" "}
+        and{" "}
+        <button onClick={() => setShowPrivacy(true)} className="text-primary hover:underline">
+          Privacy Policy
+        </button>
+      </p>
 
       {/* Terms Modal */}
       {showTerms && (
@@ -147,6 +198,42 @@ export default function AuthPage() {
           </Card>
         </div>
       )}
+    </>
+  )
+}
+
+function AuthLoading() {
+  return (
+    <div className="bg-card rounded-xl border border-border shadow-lg p-8">
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    </div>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-background to-secondary/30 flex flex-col">
+      {/* Header */}
+      <header className="border-b border-border/30 bg-background/30 backdrop-blur">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition">
+            <ChevronLeft className="h-5 w-5" />
+            <span className="text-sm font-medium">Back to Home</span>
+          </Link>
+          <Logo />
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center py-12 px-4">
+        <div className="w-full max-w-md">
+          <Suspense fallback={<AuthLoading />}>
+            <AuthContent />
+          </Suspense>
+        </div>
+      </div>
     </main>
   )
 }

@@ -53,7 +53,7 @@ export default function AdminPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch("/api/admin")
+        const response = await fetch("/api/admin", { credentials: "include" })
         if (response.status === 403) {
           setError("You don't have admin access")
           return
@@ -78,6 +78,7 @@ export default function AdminPage() {
     try {
       const response = await fetch("/api/deals", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: dealForm.name,
@@ -102,7 +103,7 @@ export default function AdminPage() {
           termMonths: "",
         })
         // Refresh data
-        const statsResponse = await fetch("/api/admin")
+        const statsResponse = await fetch("/api/admin", { credentials: "include" })
         if (statsResponse.ok) {
           const result = await statsResponse.json()
           setData(result)

@@ -74,12 +74,34 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchDashboard() {
       try {
-        const response = await fetch("/api/dashboard")
-        if (response.ok) {
-          const result = await response.json()
-          setData(result)
-        } else if (response.status === 401) {
+        // First check if we have a client-side session
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (!user) {
+          // No session, redirect to auth
           router.push("/auth")
+          return
+        }
+
+        // We have a session, fetch dashboard data
+        // Retry a few times in case server-side session is still syncing
+        let response = null
+        for (let i = 0; i < 5; i++) {
+          response = await fetch("/api/dashboard", { credentials: "include" })
+          if (response.ok) {
+            const result = await response.json()
+            setData(result)
+            return
+          } else if (response.status === 401 && i < 4) {
+            // Wait and retry with longer delays
+            await new Promise(resolve => setTimeout(resolve, 300 * (i + 1)))
+          }
+        }
+
+        // If we still get 401 but have a client session, there might be a sync issue
+        // Show the not logged in state which has a sign in button
+        if (response?.status === 401) {
+          setIsLoading(false)
         }
       } catch {
         // Handle error
@@ -88,7 +110,7 @@ export default function Dashboard() {
       }
     }
     fetchDashboard()
-  }, [router])
+  }, [router, supabase.auth])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()

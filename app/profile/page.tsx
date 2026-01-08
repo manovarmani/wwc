@@ -45,7 +45,7 @@ export default function ProfilePage() {
 
   const fetchUser = async () => {
     try {
-      const res = await fetch("/api/user")
+      const res = await fetch("/api/user", { credentials: "include" })
       if (!res.ok) {
         if (res.status === 401) {
           router.push("/auth")
@@ -80,6 +80,7 @@ export default function ProfilePage() {
     try {
       const res = await fetch("/api/user", {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,

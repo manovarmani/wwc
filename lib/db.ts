@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client"
 import { PrismaNeon } from "@prisma/adapter-neon"
-import { neon } from "@neondatabase/serverless"
 
 declare global {
   var prisma: PrismaClient | undefined
@@ -13,9 +12,8 @@ function createPrismaClient(): PrismaClient {
     throw new Error("DATABASE_URL environment variable is not set")
   }
 
-  // Use neon HTTP driver (works reliably in serverless environments)
-  const sql = neon(connectionString)
-  const adapter = new PrismaNeon(sql)
+  // Use neon adapter with new API (required for Prisma 6.6.0+)
+  const adapter = new PrismaNeon({ connectionString })
   return new PrismaClient({ adapter })
 }
 

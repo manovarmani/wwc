@@ -33,15 +33,12 @@ export default function LoginForm({ onSwitchMode }: { onSwitchMode: () => void }
       }
 
       if (data.user) {
-        // Fetch user data to get role
-        const response = await fetch("/api/user")
-        if (response.ok) {
-          const userData = await response.json()
-          router.push(userData.role === "INVESTOR" ? "/investor" : "/dashboard")
-        } else {
-          router.push("/dashboard")
-        }
-        router.refresh()
+        // Ensure session is stored in cookies by calling getSession
+        await supabase.auth.getSession()
+
+        // Small delay then hard reload to ensure cookies are sent
+        await new Promise(resolve => setTimeout(resolve, 100))
+        window.location.href = "/dashboard"
       }
     } catch {
       setError("An unexpected error occurred")

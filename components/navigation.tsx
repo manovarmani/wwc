@@ -1,12 +1,37 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/logo"
+import { createClient } from "@/lib/supabase/client"
+import { LogOut } from "lucide-react"
 
 export function Navigation() {
   const pathname = usePathname()
+  const router = useRouter()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsLoggedIn(!!user)
+    }
+    checkAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session?.user)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    window.location.href = "/"
+  }
 
   const isActive = (path: string) => pathname === path
 
@@ -27,9 +52,21 @@ export function Navigation() {
           >
             Investors
           </Link>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard">Dashboard</Link>
-          </Button>
+          {isLoggedIn ? (
+            <>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-2">
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/auth">Sign In</Link>
+            </Button>
+          )}
         </div>
       </div>
     </nav>

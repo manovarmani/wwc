@@ -5,13 +5,32 @@ import { ArrowRight, TrendingUp, Users, Lock, X, Mail, Phone, MapPin } from "luc
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Logo } from "@/components/logo"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LandingPage() {
   const [activeRole, setActiveRole] = useState<"physician" | "investor">("physician")
   const [showPrivacy, setShowPrivacy] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
   const [showContact, setShowContact] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Check if user is logged in
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setIsLoggedIn(!!user)
+    }
+    checkAuth()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session?.user)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
 
   return (
     <main className="min-h-screen bg-background">
@@ -29,9 +48,9 @@ export default function LandingPage() {
             <a href="#market" className="text-sm text-muted-foreground hover:text-foreground transition">
               Why Now
             </a>
-            <Link href="/auth">
+            <Link href={isLoggedIn ? "/dashboard" : "/auth"}>
               <Button variant="outline" size="sm">
-                Sign In
+                {isLoggedIn ? "Dashboard" : "Sign In"}
               </Button>
             </Link>
           </div>

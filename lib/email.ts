@@ -3,9 +3,18 @@ import { Resend } from "resend"
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "noreply@app.whitecoatcapital.org"
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.whitecoatcapital.org"
 
-export async function sendVerificationEmail(email: string, token: string, redirectTo: string) {
-  const verifyUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${token}&type=signup&redirect_to=${encodeURIComponent(redirectTo)}`
+export async function sendVerificationEmail({
+  email,
+  name,
+  token,
+}: {
+  email: string
+  name: string
+  token: string
+}) {
+  const verifyUrl = `${APP_URL}/api/auth/verify?token=${token}`
 
   const { data, error } = await resend.emails.send({
     from: `White Coat Capital <${FROM_EMAIL}>`,
@@ -27,7 +36,8 @@ export async function sendVerificationEmail(email: string, token: string, redire
 
               <h2 style="color: #1a1a1a; font-size: 24px; margin: 0 0 16px;">Verify your email</h2>
               <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-                Thanks for signing up! Please click the button below to verify your email address and get started.
+                Hi ${name},<br><br>
+                Thanks for signing up! Please click the button below to verify your email address and activate your account.
               </p>
 
               <div style="text-align: center; margin: 32px 0;">
@@ -40,10 +50,23 @@ export async function sendVerificationEmail(email: string, token: string, redire
                 If you didn't create an account, you can safely ignore this email.
               </p>
 
+              <p style="color: #999; font-size: 14px; margin: 16px 0 0;">
+                This link will expire in 24 hours.
+              </p>
+
               <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;">
 
               <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                White Coat Capital - Investing in Healthcare Professionals
+                If the button doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="color: #666; font-size: 12px; margin: 8px 0 0; text-align: center; word-break: break-all;">
+                ${verifyUrl}
+              </p>
+
+              <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;">
+
+              <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
+                © ${new Date().getFullYear()} White Coat Capital. All rights reserved.
               </p>
             </div>
           </div>
@@ -60,8 +83,8 @@ export async function sendVerificationEmail(email: string, token: string, redire
   return data
 }
 
-export async function sendPasswordResetEmail(email: string, token: string, redirectTo: string) {
-  const resetUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify?token=${token}&type=recovery&redirect_to=${encodeURIComponent(redirectTo)}`
+export async function sendPasswordResetEmail(email: string, token: string) {
+  const resetUrl = `${APP_URL}/auth/reset-password?token=${token}`
 
   const { data, error } = await resend.emails.send({
     from: `White Coat Capital <${FROM_EMAIL}>`,
@@ -99,7 +122,7 @@ export async function sendPasswordResetEmail(email: string, token: string, redir
               <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;">
 
               <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                White Coat Capital - Investing in Healthcare Professionals
+                © ${new Date().getFullYear()} White Coat Capital. All rights reserved.
               </p>
             </div>
           </div>
@@ -116,10 +139,11 @@ export async function sendPasswordResetEmail(email: string, token: string, redir
   return data
 }
 
-export async function sendWelcomeEmail(email: string, name: string, role: "physician" | "investor") {
-  const dashboardUrl = role === "physician"
-    ? "https://app.whitecoatcapital.org/physician"
-    : "https://app.whitecoatcapital.org/investor"
+export async function sendWelcomeEmail(email: string, name: string, role: "physician" | "investor" | "PHYSICIAN" | "INVESTOR") {
+  const normalizedRole = role.toLowerCase() as "physician" | "investor"
+  const dashboardUrl = normalizedRole === "physician"
+    ? `${APP_URL}/physician`
+    : `${APP_URL}/investor`
 
   const { data, error } = await resend.emails.send({
     from: `White Coat Capital <${FROM_EMAIL}>`,
@@ -141,9 +165,13 @@ export async function sendWelcomeEmail(email: string, name: string, role: "physi
 
               <h2 style="color: #1a1a1a; font-size: 24px; margin: 0 0 16px;">Welcome${name ? `, ${name}` : ""}!</h2>
               <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-                ${role === "physician"
-                  ? "Your account has been created. You're now ready to explore funding options tailored for healthcare professionals like you."
-                  : "Your investor account is ready. Start exploring investment opportunities in the healthcare sector."}
+                Your email has been verified and your account is now active!
+              </p>
+
+              <p style="color: #666; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
+                ${normalizedRole === "physician"
+                  ? "You're now ready to explore funding options tailored for healthcare professionals like you."
+                  : "Start exploring investment opportunities in the healthcare sector."}
               </p>
 
               <div style="text-align: center; margin: 32px 0;">
@@ -155,7 +183,7 @@ export async function sendWelcomeEmail(email: string, name: string, role: "physi
               <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;">
 
               <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                White Coat Capital - Investing in Healthcare Professionals
+                © ${new Date().getFullYear()} White Coat Capital. All rights reserved.
               </p>
             </div>
           </div>
@@ -166,7 +194,7 @@ export async function sendWelcomeEmail(email: string, name: string, role: "physi
 
   if (error) {
     console.error("Failed to send welcome email:", error)
-    throw error
+    // Don't throw - welcome email is not critical
   }
 
   return data
@@ -209,7 +237,7 @@ export async function sendApplicationSubmittedEmail(email: string, name: string,
               </p>
 
               <div style="text-align: center; margin: 32px 0;">
-                <a href="https://app.whitecoatcapital.org/physician" style="display: inline-block; background: #166534; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                <a href="${APP_URL}/physician" style="display: inline-block; background: #166534; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                   View Dashboard
                 </a>
               </div>
@@ -217,7 +245,7 @@ export async function sendApplicationSubmittedEmail(email: string, name: string,
               <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;">
 
               <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                White Coat Capital - Investing in Healthcare Professionals
+                © ${new Date().getFullYear()} White Coat Capital. All rights reserved.
               </p>
             </div>
           </div>
@@ -277,7 +305,7 @@ export async function sendInvestmentConfirmationEmail(
               </p>
 
               <div style="text-align: center; margin: 32px 0;">
-                <a href="https://app.whitecoatcapital.org/investor" style="display: inline-block; background: #166534; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                <a href="${APP_URL}/investor" style="display: inline-block; background: #166534; color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
                   View Portfolio
                 </a>
               </div>
@@ -285,7 +313,7 @@ export async function sendInvestmentConfirmationEmail(
               <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;">
 
               <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                White Coat Capital - Investing in Healthcare Professionals
+                © ${new Date().getFullYear()} White Coat Capital. All rights reserved.
               </p>
             </div>
           </div>

@@ -2,10 +2,8 @@
 
 import type React from "react"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Mail, Lock, User, Loader2, CheckCircle } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 
 export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void }) {
   const [formData, setFormData] = useState({
@@ -18,8 +16,6 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -49,54 +45,29 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
     setIsLoading(true)
 
     try {
-      // Sign up with Supabase
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.name,
-            role: formData.role,
-          },
-          emailRedirectTo: `${window.location.origin}/api/auth/callback?role=${formData.role}`,
-        },
+      // Call our custom signup API that sends verification via Resend
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          role: formData.role,
+        }),
       })
 
-      if (signUpError) {
-        setError(signUpError.message)
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || "Failed to create account")
         setIsLoading(false)
         return
       }
 
-      if (data.user) {
-        // If email confirmation is disabled, user is logged in immediately
-        if (data.session) {
-          // Create user in our database
-          const response = await fetch("/api/auth/callback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              supabaseId: data.user.id,
-              email: formData.email,
-              name: formData.name,
-              role: formData.role,
-            }),
-          })
-
-          if (!response.ok) {
-            // User creation handled by callback, proceed
-          }
-
-          setSuccess(true)
-          setTimeout(() => {
-            router.push(formData.role === "INVESTOR" ? "/investor" : "/physician")
-            router.refresh()
-          }, 2000)
-        } else {
-          // Email confirmation required
-          setSuccess(true)
-        }
-      }
+      // Success - show confirmation message
+      setSuccess(true)
     } catch {
       setError("An unexpected error occurred")
       setIsLoading(false)
@@ -111,12 +82,17 @@ export default function SignupForm({ onSwitchMode }: { onSwitchMode: () => void 
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
         </div>
-        <h3 className="text-xl font-semibold mb-2">Account Created!</h3>
+        <h3 className="text-xl font-semibold mb-2">Check Your Email</h3>
         <p className="text-muted-foreground mb-6">
-          Check your email for a confirmation link, then you can sign in.
+          We&apos;ve sent a verification link to <strong>{formData.email}</strong>.
+          <br />
+          Click the link to activate your account.
+        </p>
+        <p className="text-sm text-muted-foreground mb-6">
+          Didn&apos;t receive the email? Check your spam folder or try signing up again.
         </p>
         <Button onClick={onSwitchMode} variant="outline">
-          Go to Sign In
+          Back to Sign In
         </Button>
       </div>
     )
